@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop OS — نظام تشغيل المحل</title>
+<style>
+  :root{
+    --bg:#F5F2EA; --card:#FFFFFF; --ink:#26231D; --sub:#726C60;
+    --teal:#0F6E56; --teal-light:#E1F5EE; --teal-dark:#085041;
+    --coral:#D85A30; --coral-light:#FAECE7; --coral-dark:#4A1B0C;
+    --border:#E4DFD2; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:480px; margin:0 auto; min-height:100vh; background:var(--bg); padding-bottom:90px;}
+  header{padding:20px 18px 12px; display:flex; align-items:center; justify-content:space-between;}
+  .avatar{width:42px; height:42px; border-radius:50%; background:var(--teal-light); color:var(--teal-dark);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;}
+  .hgroup{display:flex; align-items:center; gap:10px;}
+  header h1{font-size:16px; margin:0;}
+  header p{font-size:12px; color:var(--sub); margin:2px 0 0;}
+  .reset-btn{background:none; border:none; color:var(--sub); font-size:12px; cursor:pointer; text-decoration:underline;}
+  main{padding:0 16px;}
+  .card{background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:16px; margin-bottom:12px;}
+  .stat-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+  .stat{background:var(--card); border-radius:12px; border:1px solid var(--border); padding:12px;}
+  .stat .label{font-size:12px; color:var(--sub); margin:0 0 4px;}
+  .stat .value{font-size:20px; font-weight:700; margin:0;}
+  h2.section-title{font-size:14px; color:var(--sub); margin:18px 0 8px; font-weight:600;}
+  .tabs{display:flex; overflow-x:auto; gap:6px; padding:0 16px 12px; scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab-btn{flex:none; padding:8px 14px; border-radius:999px; border:1px solid var(--border); background:var(--card);
+    color:var(--sub); font-size:13px; cursor:pointer; white-space:nowrap;}
+  .tab-btn.active{background:var(--teal); color:#fff; border-color:var(--teal);}
+  .view{display:none;}
+  .view.active{display:block;}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 0; border-bottom:1px solid var(--border);}
+  .row:last-child{border-bottom:none;}
+  .row .name{font-weight:600; font-size:14px;}
+  .row .meta{font-size:12px; color:var(--sub);}
+  .pill{display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600;}
+  .pill.teal{background:var(--teal-light); color:var(--teal-dark);}
+  .pill.coral{background:var(--coral-light); color:var(--coral-dark);}
+  input, select, textarea{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    font-size:14px; background:#fff; color:var(--ink); font-family:inherit;
+  }
+  label{font-size:12px; color:var(--sub); display:block; margin:10px 0 4px;}
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  button.primary{
+    width:100%; margin-top:14px; padding:12px; border:none; border-radius:10px;
+    background:var(--teal); color:#fff; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  button.primary:active{transform:scale(0.98);}
+  button.ghost{
+    padding:8px 12px; border:1px solid var(--border); background:#fff; border-radius:8px;
+    font-size:12px; cursor:pointer; color:var(--ink);
+  }
+  .icon-btn{background:none; border:none; cursor:pointer; font-size:16px; color:var(--sub); padding:4px;}
+  .empty{text-align:center; color:var(--sub); font-size:13px; padding:24px 8px;}
+  .chat-log{display:flex; flex-direction:column; gap:10px; margin-bottom:12px; min-height:120px;}
+  .msg{max-width:85%; padding:10px 12px; border-radius:12px; font-size:13px; line-height:1.6;}
+  .msg.user{align-self:flex-start; background:var(--teal); color:#fff; border-bottom-left-radius:2px;}
+  .msg.bot{align-self:flex-end; background:#fff; border:1px solid var(--border); border-bottom-right-radius:2px;}
+  .suggestions{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+  .chip{padding:6px 10px; border-radius:999px; background:var(--teal-light); color:var(--teal-dark);
+    font-size:12px; cursor:pointer; border:none;}
+  .chat-input{display:flex; gap:8px;}
+  .chat-input input{flex:1;}
+  .chat-input button{padding:0 16px; border:none; border-radius:10px; background:var(--teal); color:#fff; cursor:pointer;}
+  .error-text{color:var(--coral-dark); font-size:12px; margin-top:6px;}
+  .loading{text-align:center; padding:40px; color:var(--sub); font-size:13px;}
+  .auth-wrap{max-width:380px; margin:60px auto; padding:0 20px;}
+  .auth-tabs{display:flex; gap:8px; margin-bottom:18px;}
+  .auth-tabs button{flex:1; padding:10px; border-radius:10px; border:1px solid var(--border); background:#fff; cursor:pointer; font-size:13px;}
+  .auth-tabs button.active{background:var(--teal); color:#fff; border-color:var(--teal);}
+  .brand{text-align:center; margin-bottom:24px;}
+  .brand h1{font-size:20px; margin:0 0 4px;}
+  .brand p{font-size:13px; color:var(--sub); margin:0;}
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="loading">جاري التحميل...</div>
+</div>
+
+<script>
+const TOKEN_KEY = "shopos_token";
+const NAME_KEY = "shopos_name";
+let shopName = localStorage.getItem(NAME_KEY) || "";
+let chatHistory = [];
+let activeTab = "home";
+
+function getToken(){ return localStorage.getItem(TOKEN_KEY); }
+function money(n){ return Math.round(n).toLocaleString("en-US") + " ج.م"; }
+function todayStr(){ return new Date().toLocaleDateString("ar-EG", {weekday:"long", day:"numeric", month:"long"}); }
+
+async function api(path, options={}){
+  const token = getToken();
+  const headers = { "Content-Type":"application/json", ...(options.headers||{}) };
+  if(token) headers["Authorization"] = "Bearer " + token;
+  const res = await fetch("/api"+path, { ...options, headers });
+  let json = null;
+  try{ json = await res.json(); }catch(e){ json = null; }
+  if(res.status === 401){
+    logout();
+    throw new Error("جلسة الدخول انتهت");
+  }
+  if(!res.ok){
+    throw new Error((json && json.error) || "حصل خطأ غير متوقع");
+  }
+  return json;
+}
+
+function logout(){
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(NAME_KEY);
+  renderRoot();
+}
+
+function renderRoot(){
+  if(getToken()){
+    renderApp();
+  }else{
+    renderAuth();
+  }
+}
+
+let authMode = "login";
+function renderAuth(){
+  const root = document.getElementById("root");
+  root.innerHTML = `
+    <div class="auth-wrap">
+      <div class="brand">
+        <h1>Shop OS</h1>
+        <p>نظام تشغيل المحل المصري بالذكاء الاصطناعي</p>
+      </div>
+      <div class="auth-tabs">
+        <button id="tab-login" class="${authMode==='login'?'active':''}">تسجيل دخول</button>
+        <button id="tab-register" class="${authMode==='register'?'active':''}">حساب جديد</button>
+      </div>
+      <div class="card">
+        ${authMode==='register' ? `
+          <label>اسم المحل</label>
+          <input id="reg-shop" placeholder="بقالة الأمين" />
+        ` : ``}
+        <label>البريد الإلكتروني</label>
+        <input id="auth-email" type="email" placeholder="name@example.com" />
+        <label>كلمة السر</label>
+        <input id="auth-password" type="password" placeholder="6 أحرف على الأقل" />
+        <div id="auth-error" class="error-text"></div>
+        <button class="primary" id="auth-submit">${authMode==='register' ? 'إنشاء الحساب' : 'دخول'}</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("tab-login").onclick = ()=>{ authMode="login"; renderAuth(); };
+  document.getElementById("tab-register").onclick = ()=>{ authMode="register"; renderAuth(); };
+  document.getElementById("auth-submit").onclick = async ()=>{
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    const err = document.getElementById("auth-error");
+    err.textContent = "";
+    try{
+      let result;
+      if(authMode === "register"){
+        const shopNameInput = document.getElementById("reg-shop").value.trim();
+        if(!shopNameInput){ err.textContent = "اكتب اسم المحل"; return; }
+        result = await api("/auth/register", { method:"POST", body: JSON.stringify({ shopName: shopNameInput, email, password }) });
+      }else{
+        result = await api("/auth/login", { method:"POST", body: JSON.stringify({ email, password }) });
+      }
+      localStorage.setItem(TOKEN_KEY, result.token);
+      localStorage.setItem(NAME_KEY, result.shopName);
+      shopName = result.shopName;
+      renderRoot();
+    }catch(e){
+      err.textContent = e.message;
+    }
+  };
+}
+
+const TABS = [
+  {id:"home", label:"الرئيسية"},
+  {id:"inventory", label:"المخزون"},
+  {id:"sales", label:"البيع"},
+  {id:"customers", label:"العملاء"},
+  {id:"debts", label:"الديون"},
+  {id:"assistant", label:"المساعد الذكي"},
+];
+
+let cache = { products:[], customers:[], sales:[], debts:[], dashboard:null };
+
+async function refreshAll(){
+  const [products, customers, sales, debts, dashboard] = await Promise.all([
+    api("/products"), api("/customers"), api("/sales"), api("/debts"), api("/dashboard")
+  ]);
+  cache = { products, customers, sales, debts, dashboard };
+}
+
+async function renderApp(){
+  const root = document.getElementById("root");
+  root.innerHTML = `<div class="app"><div class="loading">جاري تحميل بيانات المحل...</div></div>`;
+  try{
+    await refreshAll();
+  }catch(e){
+    renderAuth();
+    return;
+  }
+  root.innerHTML = `
+    <div class="app">
+      <header>
+        <div class="hgroup">
+          <div class="avatar">${(shopName||"؟").slice(0,2)}</div>
+          <div>
+            <h1>${shopName}</h1>
+            <p>${todayStr()}</p>
+          </div>
+        </div>
+        <button class="reset-btn" id="logout-btn">تسجيل خروج</button>
+      </header>
+      <div class="tabs" id="tabs"></div>
+      <main>
+        <div class="view" id="view-home"></div>
+        <div class="view" id="view-inventory"></div>
+        <div class="view" id="view-sales"></div>
+        <div class="view" id="view-customers"></div>
+        <div class="view" id="view-debts"></div>
+        <div class="view" id="view-assistant"></div>
+      </main>
+    </div>
+  `;
+  document.getElementById("logout-btn").onclick = logout;
+  renderTabs();
+  renderHome();
+  renderInventory();
+  renderSales();
+  renderCustomers();
+  renderDebts();
+  renderAssistant();
+  showTab(activeTab);
+}
+
+function renderTabs(){
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = TABS.map(t=>`<button class="tab-btn ${t.id===activeTab?"active":""}" data-tab="${t.id}">${t.label}</button>`).join("");
+  tabs.querySelectorAll(".tab-btn").forEach(btn=>{
+    btn.onclick = ()=>{ activeTab = btn.dataset.tab; showTab(activeTab); renderTabs(); };
+  });
+}
+function showTab(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-"+id).classList.add("active");
+}
+
+async function refreshAndRerender(tab){
+  await refreshAll();
+  renderHome(); renderInventory(); renderSales(); renderCustomers(); renderDebts();
+  activeTab = tab || activeTab;
+  renderTabs(); showTab(activeTab);
+}
+
+function renderHome(){
+  const d = cache.dashboard;
+  const view = document.getElementById("view-home");
+  view.innerHTML = `
+    <div class="stat-row">
+      <div class="stat"><p class="label">مبيعات اليوم</p><p class="value">${money(d.todaySalesTotal)}</p></div>
+      <div class="stat"><p class="label">ديون مستحقة</p><p class="value">${money(d.outstandingDebtTotal)}</p></div>
+    </div>
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">أصناف على وشك النفاد</h2>
+      ${d.lowStock.length? d.lowStock.map(p=>`
+        <div class="row"><div><p class="name">${p.name}</p></div><span class="pill coral">${p.qty} متبقي</span></div>`).join("")
+        : `<p class="empty">كل الأصناف متوفرة بكميات جيدة</p>`}
+    </div>
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">آخر إشعارات واتساب</h2>
+      ${d.notifications.length? d.notifications.map(n=>`<div class="row"><div><p class="meta">${n.text}</p></div></div>`).join("")
+        : `<p class="empty">لا توجد إشعارات بعد</p>`}
+    </div>
+  `;
+}
+
+function renderInventory(){
+  const view = document.getElementById("view-inventory");
+  view.innerHTML = `
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">إضافة صنف جديد</h2>
+      <label>اسم المنتج</label>
+      <input id="inv-name" placeholder="مثال: شاي ليبتون 100 فتلة" />
+      <div class="form-grid">
+        <div><label>السعر (ج.م)</label><input id="inv-price" type="number" min="0" /></div>
+        <div><label>الكمية</label><input id="inv-qty" type="number" min="0" /></div>
+      </div>
+      <div id="inv-error" class="error-text"></div>
+      <button class="primary" id="inv-add">إضافة الصنف</button>
+    </div>
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">الأصناف الحالية (${cache.products.length})</h2>
+      ${cache.products.length? cache.products.map(p=>`
+        <div class="row">
+          <div><p class="name">${p.name}</p><p class="meta">${money(p.price)} / صنف</p></div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="pill ${p.qty<=5?"coral":"teal"}">${p.qty} في المخزون</span>
+            <button class="icon-btn" data-del="${p.id}">✕</button>
+          </div>
+        </div>`).join("") : `<p class="empty">لا توجد أصناف بعد</p>`}
+    </div>
+  `;
+  view.querySelector("#inv-add").onclick = async ()=>{
+    const name = view.querySelector("#inv-name").value.trim();
+    const price = view.querySelector("#inv-price").value;
+    const qty = view.querySelector("#inv-qty").value;
+    const err = view.querySelector("#inv-error");
+    try{
+      await api("/products", { method:"POST", body: JSON.stringify({ name, price, qty }) });
+      err.textContent = "";
+      await refreshAndRerender("inventory");
+    }catch(e){ err.textContent = e.message; }
+  };
+  view.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.onclick = async ()=>{
+      await api("/products/"+btn.dataset.del, { method:"DELETE" });
+      await refreshAndRerender("inventory");
+    };
+  });
+}
+
+function renderSales(){
+  const view = document.getElementById("view-sales");
+  const productOptions = cache.products.map(p=>`<option value="${p.id}">${p.name} — ${money(p.price)} (متاح ${p.qty})</option>`).join("");
+  const customerOptions = `<option value="">بدون عميل محدد</option>` + cache.customers.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+  view.innerHTML = `
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">تسجيل عملية بيع</h2>
+      ${cache.products.length? `
+        <label>المنتج</label>
+        <select id="sale-product">${productOptions}</select>
+        <div class="form-grid">
+          <div><label>الكمية</label><input id="sale-qty" type="number" min="1" value="1" /></div>
+          <div><label>العميل (اختياري)</label><select id="sale-customer">${customerOptions}</select></div>
+        </div>
+        <div id="sale-error" class="error-text"></div>
+        <button class="primary" id="sale-submit">إتمام البيع</button>
+      ` : `<p class="empty">أضف أصناف في المخزون أولًا</p>`}
+    </div>
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">آخر المبيعات</h2>
+      ${cache.sales.length? cache.sales.slice(0,8).map(s=>`
+        <div class="row">
+          <div><p class="name">${s.product_name || "منتج محذوف"}</p><p class="meta">${new Date(s.created_at).toLocaleString("ar-EG")}</p></div>
+          <span class="pill teal">${money(s.total)}</span>
+        </div>`).join("") : `<p class="empty">لا توجد مبيعات مسجلة بعد</p>`}
+    </div>
+  `;
+  const submitBtn = view.querySelector("#sale-submit");
+  if(submitBtn){
+    submitBtn.onclick = async ()=>{
+      const productId = view.querySelector("#sale-product").value;
+      const qty = view.querySelector("#sale-qty").value;
+      const customerId = view.querySelector("#sale-customer").value || null;
+      const err = view.querySelector("#sale-error");
+      try{
+        await api("/sales", { method:"POST", body: JSON.stringify({ productId, qty, customerId }) });
+        err.textContent = "";
+        await refreshAndRerender("sales");
+      }catch(e){ err.textContent = e.message; }
+    };
+  }
+}
+
+function renderCustomers(){
+  const view = document.getElementById("view-customers");
+  view.innerHTML = `
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">إضافة عميل</h2>
+      <label>الاسم</label>
+      <input id="cust-name" placeholder="اسم العميل" />
+      <label>رقم الموبايل</label>
+      <input id="cust-phone" placeholder="01xxxxxxxxx" />
+      <div id="cust-error" class="error-text"></div>
+      <button class="primary" id="cust-add">إضافة العميل</button>
+    </div>
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">العملاء (${cache.customers.length})</h2>
+      ${cache.customers.length? cache.customers.map(c=>`
+        <div class="row">
+          <div><p class="name">${c.name}</p><p class="meta">${c.phone||""}</p></div>
+          <button class="icon-btn" data-del="${c.id}">✕</button>
+        </div>`).join("") : `<p class="empty">لا يوجد عملاء بعد</p>`}
+    </div>
+  `;
+  view.querySelector("#cust-add").onclick = async ()=>{
+    const name = view.querySelector("#cust-name").value.trim();
+    const phone = view.querySelector("#cust-phone").value.trim();
+    const err = view.querySelector("#cust-error");
+    try{
+      await api("/customers", { method:"POST", body: JSON.stringify({ name, phone }) });
+      err.textContent = "";
+      await refreshAndRerender("customers");
+    }catch(e){ err.textContent = e.message; }
+  };
+  view.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.onclick = async ()=>{
+      await api("/customers/"+btn.dataset.del, { method:"DELETE" });
+      await refreshAndRerender("customers");
+    };
+  });
+}
+
+function renderDebts(){
+  const view = document.getElementById("view-debts");
+  const customerOptions = cache.customers.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+  const outstanding = cache.debts.filter(d=>!d.paid).reduce((a,d)=>a+d.amount,0);
+  view.innerHTML = `
+    <div class="stat" style="margin-bottom:12px;">
+      <p class="label">إجمالي الديون المستحقة</p><p class="value">${money(outstanding)}</p>
+    </div>
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">تسجيل دين جديد</h2>
+      ${cache.customers.length? `
+        <label>العميل</label>
+        <select id="debt-customer">${customerOptions}</select>
+        <div class="form-grid">
+          <div><label>المبلغ (ج.م)</label><input id="debt-amount" type="number" min="1" /></div>
+          <div><label>ملاحظة (اختياري)</label><input id="debt-note" placeholder="مثال: فاتورة الأسبوع" /></div>
+        </div>
+        <div id="debt-error" class="error-text"></div>
+        <button class="primary" id="debt-add">تسجيل الدين</button>
+      ` : `<p class="empty">أضف عميل أولًا من تبويب العملاء</p>`}
+    </div>
+    <div class="card">
+      <h2 class="section-title" style="margin-top:0">قائمة الديون</h2>
+      ${cache.debts.length? cache.debts.map(d=>`
+        <div class="row">
+          <div><p class="name">${d.customer_name || "عميل محذوف"}</p><p class="meta">${d.note||""} — ${new Date(d.created_at).toLocaleDateString("ar-EG")}</p></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="pill ${d.paid?"teal":"coral"}">${money(d.amount)}</span>
+            ${!d.paid? `<button class="ghost" data-pay="${d.id}">تحصيل</button>` : `<span class="meta">تم السداد</span>`}
+          </div>
+        </div>`).join("") : `<p class="empty">لا توجد ديون مسجلة</p>`}
+    </div>
+  `;
+  const addBtn = view.querySelector("#debt-add");
+  if(addBtn){
+    addBtn.onclick = async ()=>{
+      const customerId = view.querySelector("#debt-customer").value;
+      const amount = view.querySelector("#debt-amount").value;
+      const note = view.querySelector("#debt-note").value.trim();
+      const err = view.querySelector("#debt-error");
+      try{
+        await api("/debts", { method:"POST", body: JSON.stringify({ customerId, amount, note }) });
+        err.textContent = "";
+        await refreshAndRerender("debts");
+      }catch(e){ err.textContent = e.message; }
+    };
+  }
+  view.querySelectorAll("[data-pay]").forEach(btn=>{
+    btn.onclick = async ()=>{
+      await api("/debts/"+btn.dataset.pay+"/pay", { method:"POST" });
+      await refreshAndRerender("debts");
+    };
+  });
+}
+
+function renderAssistant(){
+  const view = document.getElementById("view-assistant");
+  view.innerHTML = `
+    <div class="chat-log" id="chat-log">${chatHistory.map(m=>`<div class="msg ${m.role}">${m.text}</div>`).join("")}</div>
+    <div class="suggestions">
+      <button class="chip" data-q="فين المنتج ده؟ عايز أعرف السكر متاح ولا لأ">فين السكر؟</button>
+      <button class="chip" data-q="مين من العملاء عليه فلوس دلوقتي؟">مين عليه فلوس؟</button>
+      <button class="chip" data-q="عمل إيه المبيعات النهاردة؟">مبيعات النهاردة؟</button>
+    </div>
+    <div class="chat-input">
+      <input id="chat-input" placeholder="اكتب سؤالك هنا..." />
+      <button id="chat-send">إرسال</button>
+    </div>
+    <div id="chat-error" class="error-text"></div>
+  `;
+  const input = view.querySelector("#chat-input");
+  const send = async (text)=>{
+    const msg = (text||input.value).trim();
+    const err = view.querySelector("#chat-error");
+    if(!msg){ err.textContent = "اكتب سؤال أولًا"; return; }
+    err.textContent = "";
+    chatHistory.push({role:"user", text:msg});
+    input.value = "";
+    renderAssistant();
+    document.getElementById("chat-log").innerHTML += `<div class="msg bot">جاري الرد...</div>`;
+    try{
+      const result = await api("/assistant", { method:"POST", body: JSON.stringify({ message: msg }) });
+      chatHistory.push({role:"bot", text: result.reply});
+    }catch(e){
+      chatHistory.push({role:"bot", text: e.message || "حصل خطأ في الاتصال بالمساعد."});
+    }
+    renderAssistant();
+  };
+  view.querySelector("#chat-send").onclick = ()=>send();
+  input.onkeydown = (e)=>{ if(e.key==="Enter") send(); };
+  view.querySelectorAll("[data-q]").forEach(chip=>{ chip.onclick = ()=> send(chip.dataset.q); });
+}
+
+renderRoot();
+</script>
+</body>
+</html>
